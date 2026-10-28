@@ -18,7 +18,9 @@ def create_account(acc_id, name, initial_deposit=0, transactions=None):
     if transactions is None:
         transactions = ledger
     account_data[acc_id] = {"name": name, "balance": initial_deposit}
-    transactions.append(f"Created {acc_id} with initial balance {initial_deposit}")
+    transactions.append(
+        f"Created {acc_id} with initial balance {initial_deposit}"
+    )
     return True
 
 
