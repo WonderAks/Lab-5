@@ -1,0 +1,7 @@
+bank_account_system.py:6:1: F401 'sys' imported but unused
+bank_account_system.py:15:80: E501 line too long (89 > 79 characters)
+bank_account_system.py:22:5: E722 do not use bare 'except'
+bank_account_system.py:27:5: F841 local variable 'service_fee' is assigned to but never used
+bank_account_system.py:28:33: E711 comparison to None should be 'if cond is None:'
+bank_account_system.py:38:5: F841 local variable 'bal' is assigned to but never used
+bank_account_system.py:70:7: W292 no newline at end of file
