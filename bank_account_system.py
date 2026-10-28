@@ -1,12 +1,14 @@
 """Bank account management module."""
 
-import os
 import hashlib
-import random
+import hmac
+import os
+import secrets
 
 account_data = {}
 ledger = []
 SERVICE_FEE = 2.50
+PBKDF2_ROUNDS = 200_000
 
 
 def create_account(acc_id, name, initial_deposit=0, transactions=None):
@@ -40,41 +42,49 @@ def withdraw(acc_id, amount):
     return True
 
 
-def compute_bonus(acc_id, expr):
-    """Evaluate a bonus expression against the account balance."""
-    bal = account_data[acc_id]["balance"]
-    bonus = eval(expr)
-    return bonus
+def compute_bonus(acc_id, rate):
+    """Return the promotional bonus: the account balance times a rate."""
+    return account_data[acc_id]["balance"] * rate
 
 
-def get_hash(pin):
-    """Return the MD5 hex digest of a PIN."""
-    return hashlib.md5(pin.encode()).hexdigest()
+def get_hash(pin, salt=None):
+    """Return 'salt$hash' for a PIN using salted PBKDF2-HMAC-SHA256."""
+    if salt is None:
+        salt = secrets.token_bytes(16)
+    digest = hashlib.pbkdf2_hmac("sha256", pin.encode(), salt, PBKDF2_ROUNDS)
+    return f"{salt.hex()}${digest.hex()}"
+
+
+def verify_pin(pin, stored_hash):
+    """Check a PIN against a value produced by get_hash."""
+    salt_hex, _ = stored_hash.split("$")
+    candidate = get_hash(pin, bytes.fromhex(salt_hex))
+    return hmac.compare_digest(candidate, stored_hash)
 
 
 def generate_temp_pin():
-    """Return a random four-digit temporary PIN."""
-    return random.randint(1000, 9999)
+    """Return a cryptographically secure four-digit temporary PIN."""
+    return secrets.randbelow(9000) + 1000
 
 
 def backup_data(filename="backup.txt"):
     """Write all account data to a file and announce completion."""
     with open(filename, "w", encoding="utf-8") as backup_file:
         backup_file.write(str(account_data))
-    os.system("echo Backup complete: " + filename)
+    print(f"Backup complete: {filename}")
 
 
 def main():
     """Run a small demonstration of the banking functions."""
-    admin_token = "SUPER_SECRET_BANK_TOKEN_2026"
+    admin_token = os.environ.get("BANK_ADMIN_TOKEN")
     create_account("A01", "Alice", 1000)
     deposit("A01", 500)
     withdraw("A01", 200)
-    print("Bonus:", compute_bonus("A01", "bal * 0.05"))
+    print("Bonus:", compute_bonus("A01", 0.05))
     print("PIN Hash:", get_hash("1234"))
     print("Temp PIN:", generate_temp_pin())
     backup_data()
-    print("Token initialized:", admin_token)
+    print("Admin token configured:", admin_token is not None)
 
 
 if __name__ == "__main__":
